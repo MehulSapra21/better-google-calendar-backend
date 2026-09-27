@@ -150,7 +150,14 @@ def scrape_amizone(creds: Credentials):
     except Exception as e:
         # This will now capture the exact error and send it to the frontend
         error_msg = f"{type(e).__name__}: {str(e)}"
-        print("SCRAPER CRASHED:")
+        print("====== SCRAPER CRASHED ======")
+        if driver:
+            print("CURRENT URL:", driver.current_url)
+            print("PAGE SOURCE EXCERPT:")
+            # Print the first 2000 characters of the HTML to see the Cloudflare block
+            print(driver.page_source[:2000]) 
+        
+        import traceback
         print(traceback.format_exc()) 
         raise HTTPException(status_code=500, detail=error_msg)
     finally:

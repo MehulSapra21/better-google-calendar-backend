@@ -9,7 +9,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 import time
-import traceback # Added to capture detailed errors
+import traceback 
 
 app = FastAPI()
 
@@ -37,10 +37,11 @@ def read_root():
 @app.post("/scrape")
 def scrape_amizone(creds: Credentials):
     options = uc.ChromeOptions()
-    # options.add_argument('--headless') 
+    
+    # Visual mode flags (Headless is OFF)
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
-    options.add_argument('--disable-dev-shm-usage') # CRITICAL FIX FOR DOCKER/RENDER
+    options.add_argument('--disable-dev-shm-usage')
     
     # Disable the "Save Password" prompt
     prefs = {
@@ -51,7 +52,11 @@ def scrape_amizone(creds: Credentials):
     
     driver = None
     try:
-        driver = uc.Chrome(options=options)
+        # CRITICAL FIX: Explicitly tell undetected_chromedriver where Chrome is installed
+        driver = uc.Chrome(
+            options=options,
+            browser_executable_path='/usr/bin/google-chrome'
+        )
         driver.get("https://s.amizone.net/")
         
         # 1. Wait for the page structure to load
@@ -148,16 +153,16 @@ def scrape_amizone(creds: Credentials):
         return {"message": f"Scraping successful (fast-forwarded {days_checked} day(s) to find classes)", "data": events}
 
     except Exception as e:
-        # This will now capture the exact error and send it to the frontend
         error_msg = f"{type(e).__name__}: {str(e)}"
         print("====== SCRAPER CRASHED ======")
         if driver:
-            print("CURRENT URL:", driver.current_url)
-            print("PAGE SOURCE EXCERPT:")
-            # Print the first 2000 characters of the HTML to see the Cloudflare block
-            print(driver.page_source[:2000]) 
+            try:
+                print("CURRENT URL:", driver.current_url)
+                print("PAGE SOURCE EXCERPT:")
+                print(driver.page_source[:2000]) 
+            except:
+                print("Could not retrieve URL or Page Source. Browser likely crashed.")
         
-        import traceback
         print(traceback.format_exc()) 
         raise HTTPException(status_code=500, detail=error_msg)
     finally:

@@ -9,6 +9,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 from bs4 import BeautifulSoup
 import time
+import traceback # Added to capture detailed errors
 
 app = FastAPI()
 
@@ -36,10 +37,10 @@ def read_root():
 @app.post("/scrape")
 def scrape_amizone(creds: Credentials):
     options = uc.ChromeOptions()
-    # TEMPORARILY DISABLED HEADLESS MODE FOR VISUAL DEBUGGING
     options.add_argument('--headless') 
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
+    options.add_argument('--disable-dev-shm-usage') # CRITICAL FIX FOR DOCKER/RENDER
     
     # Disable the "Save Password" prompt
     prefs = {
@@ -115,13 +116,10 @@ def scrape_amizone(creds: Credentials):
             html_content = driver.page_source
             soup = BeautifulSoup(html_content, "lxml")
             
-            # Find elements that match either the grid view event OR the list view row
             calendar_elements = soup.find_all(lambda tag: tag.has_attr('class') and any(c in tag['class'] for c in ['fc-time-grid-event', 'fc-event', 'fc-list-item']))
             
             for event in calendar_elements:
-                # Look for time classes from either view
                 time_el = event.find(class_="fc-time") or event.find(class_="fc-list-item-time")
-                # Look for title classes from either view
                 title_el = event.find(class_="fc-title") or event.find(class_="fc-list-item-title")
                 
                 time_text = time_el.get_text(strip=True) if time_el else ""
@@ -150,7 +148,11 @@ def scrape_amizone(creds: Credentials):
         return {"message": f"Scraping successful (fast-forwarded {days_checked} day(s) to find classes)", "data": events}
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # This will now capture the exact error and send it to the frontend
+        error_msg = f"{type(e).__name__}: {str(e)}"
+        print("SCRAPER CRASHED:")
+        print(traceback.format_exc()) 
+        raise HTTPException(status_code=500, detail=error_msg)
     finally:
         if driver:
             driver.quit()

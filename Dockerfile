@@ -15,4 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Launch the app inside a virtual 1920x1080 display
-CMD xvfb-run --server-args="-screen 0 1920x1080x24" uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+CMD xvfb-run --server-args="-screen 0 1920x1080x24" uvicorn main:app --host 0.0.0.0 --port 7860

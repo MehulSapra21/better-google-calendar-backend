@@ -37,7 +37,7 @@ def read_root():
 @app.post("/scrape")
 def scrape_amizone(creds: Credentials):
     options = uc.ChromeOptions()
-    options.add_argument('--headless') 
+    # options.add_argument('--headless') 
     options.add_argument('--disable-gpu')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage') # CRITICAL FIX FOR DOCKER/RENDER
